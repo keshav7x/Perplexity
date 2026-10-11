@@ -29,3 +29,4 @@ export const sendEmail = async ({
 
   return data;
 };
+

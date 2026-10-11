@@ -25,11 +25,33 @@ export class authRepoClass{
     return user
   }
 
-  verifyEmail = async (data: {
-    token: string,
-    userId:string
-  }) => {
+  findByVerificationToken = async (token: string) => {
+    const user = await this.database.
+      select().
+      from(usersTable).
+      where(eq(usersTable.tokenHash,token))
+    return user
+  }
 
+  updateVerficationToken = async (userId: number,token:string) => {
+    const [user] = await this.database.update(usersTable).set({
+      tokenHash:token
+    }).where(eq(usersTable.id, userId)).returning()
+    return user
+    
+  }
+
+  markAsVerified = async(userId: number) => {
+    const [user] = await this.database.update(usersTable).set({
+      'emailVerified':true
+    }).where(eq(usersTable.id, userId)).returning()
+    return user
+
+  }
+
+  findByEmail = async (email: string) => {
+    const [user] = await this.database.select().from(usersTable).where(eq(usersTable.email, email))
+    return user
   }
 
   userExist = async (data: {

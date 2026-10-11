@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, varchar } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -7,5 +7,6 @@ export const usersTable = pgTable("users", {
   email: varchar({ length: 255 }).notNull().unique(),
   emailVerified: boolean().default(false),
   hashedPassword: varchar().notNull(),
-  tokenHash:varchar().notNull()
+  tokenHash: varchar().notNull(),
+  token_expires_at :timestamp()
 });

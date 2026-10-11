@@ -8,3 +8,7 @@ export const generateVerificationId = () => {
   return generateUniqueId()
 }
 
+
+export const hash = (hash: string) => {
+  return argon2.hash(hash)
+}
