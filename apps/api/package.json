@@ -10,22 +10,26 @@
   },
   "devDependencies": {
     "@types/bun": "^1.4.2",
-    "drizzle-kit": "^0.31.11",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^1.0.0-rc.4",
     "pino-pretty": "^13.2.0",
     "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.93",
     "@ai-sdk/openai": "^4.0.91",
+    "@types/express": "^5.0.6",
     "ai": "^7.0.137",
     "argon2": "^0.45.1",
     "bullmq": "^6.3.12",
     "dotenv": "^18.0.7",
-    "drizzle-orm": "^0.45.4",
+    "drizzle-orm": "^1.0.0-rc.4",
     "express": "^5.3.0",
     "ioredis": "^6.0.0",
     "jose": "^6.2.12",
+    "pg": "^8.23.1",
     "pino": "^10.4.0",
     "postgres": "^3.4.9",
     "zod": "^4.6.5"
