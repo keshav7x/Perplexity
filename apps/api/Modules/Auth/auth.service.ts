@@ -2,6 +2,7 @@ import { envConfig } from "@api/Config/env.config";
 import { sendEmail } from "@api/services/emailService";
 import { authRepoClass } from "./auth.repositary";
 import { generateVerificationId, hash, hashPassword } from "./auth.utils";
+import { PgTimestamp, timestamp } from "drizzle-orm/pg-core";
 
 export class authServiceClass {
   constructor(
@@ -125,4 +126,27 @@ export class authServiceClass {
       };
     }
   };
+
+  verifyEmail = async (data: {
+    token:string
+  }) => {
+    const user = await this.authRepo.findByVerificationToken(data.token)
+    if (!user) throw new Error("Can't find token")
+    const isExpired = Date.now() > user.token_expires_at!.getTime();
+
+    if (isExpired) {
+      throw new Error("Verification link has expired.");
+    }
+
+    const verifiedUser = await this.authRepo.markAsVerified(user.id)
+
+    if (!verifiedUser) throw new Error("Could not verify")
+
+    return user
+
+    
+
+  }
+
+
 }

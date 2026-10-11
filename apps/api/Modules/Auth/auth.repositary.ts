@@ -26,7 +26,7 @@ export class authRepoClass{
   }
 
   findByVerificationToken = async (token: string) => {
-    const user = await this.database.
+    const [user] = await this.database.
       select().
       from(usersTable).
       where(eq(usersTable.tokenHash,token))
@@ -38,7 +38,7 @@ export class authRepoClass{
       tokenHash:token
     }).where(eq(usersTable.id, userId)).returning()
     return user
-    
+
   }
 
   markAsVerified = async(userId: number) => {
@@ -63,6 +63,11 @@ export class authRepoClass{
       where(eq(usersTable.email,data.email))
     if (user) return true
     return false
+  }
+
+  findUserById = async (userId: number) => {
+    const [user] = await this.database.select().from(usersTable).where(eq(usersTable.id, userId))
+    return user
   }
 
 
