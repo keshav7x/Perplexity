@@ -6,11 +6,12 @@ import { eq } from "drizzle-orm";
 
 export class authRepoClass{
   constructor(private readonly database = db) { }
-  private create = async (data: {
+   create = async (data: {
     name: string,
     age: number,
     email: string,
-    password:string
+     password: string,
+    tokenHash:string
   }) => {
 
     const [user] = await this.database.insert(usersTable).values({
@@ -18,7 +19,8 @@ export class authRepoClass{
       age: data.age,
       email: data.email,
       emailVerified: false,
-      hashPassword:data.password
+      hashedPassword: data.password,
+      tokenHash:data.tokenHash
     }).returning()
     return user
   }

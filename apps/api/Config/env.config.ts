@@ -5,7 +5,8 @@ const envSchema = z.object({
   STORAGE_URL: z.string(),
   STORAGE_ACCESS_KEY: z.string(),
   JWT_SECRET: z.string(),
-  SEND_GRID_API:z.string()
+  RESEND_API_KEY: z.string(),
+  BASE_URL:z.string()
 })
 
 export const envConfig=envSchema.parse(process.env);
