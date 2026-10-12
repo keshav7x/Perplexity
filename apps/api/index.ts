@@ -5,6 +5,8 @@ import { emailWorker } from "./BullMq/Email/email.worker";
 import authRouter from "./Modules/Auth/auth.routes";
 import { envConfig } from "./Config/env.config";
 import { completeChat } from "./AI/services/completeChat";
+import { chatTitlePrompt } from "./AI/PromptsTemplate/generateChatTitle";
+import { generateChatTitle } from "./AI/services/generateTitle";
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -29,6 +31,7 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log("📨 Email worker initialized");
 });
+
 
 async function shutdown(signal: string) {
   console.log(`${signal} received. Shutting down...`);
