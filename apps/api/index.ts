@@ -4,6 +4,7 @@ import express from "express";
 import { emailWorker } from "./BullMq/Email/email.worker";
 import authRouter from "./Modules/Auth/auth.routes";
 import { envConfig } from "./Config/env.config";
+import { completeChat } from "./AI/services/completeChat";
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
