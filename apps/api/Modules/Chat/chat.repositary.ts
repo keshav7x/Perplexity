@@ -76,4 +76,26 @@ export class chatRepositartClass {
       };
     });
   };
+
+  creteAiMessage = async (conversaitonId: number,message:string) => {
+    const [chat]=await this.DB.insert(chatTable).values({
+      message: message,
+      sender: "ai",
+      conversationId:conversaitonId
+    }).returning()
+    return chat
+  }
+
+  deleteChat = async (chatId: number) => {
+    const [chat] = await this.DB.delete(chatTable).where(eq(chatTable.id, chatId)).returning()
+    return chat
+  }
+
+  editChat = async (message: string, chatId: number) => {
+    const [chat] = await this.DB.update(chatTable).set({
+      message:message
+    }).where(eq(chatTable.id, chatId)).returning()
+    return chat
+  }
+  
 }
