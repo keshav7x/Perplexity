@@ -5,6 +5,13 @@ import { eq } from "drizzle-orm";
 
 
 export class authRepoClass{
+  private VERIFICATION_TOKEN_TTL_MS = 15 * 60 * 1000
+  private createTokenExpiry = (
+    ttlMs = this.VERIFICATION_TOKEN_TTL_MS
+  ): Date => {
+    return new Date(Date.now() + ttlMs);
+  };
+
   constructor(private readonly database = db) { }
    create = async (data: {
     name: string,
@@ -14,28 +21,35 @@ export class authRepoClass{
     tokenHash:string
   }) => {
 
+     const expiresIn=this.createTokenExpiry()
+
     const [user] = await this.database.insert(usersTable).values({
       name: data.name,
       age: data.age,
       email: data.email,
       emailVerified: false,
       hashedPassword: data.password,
-      tokenHash:data.tokenHash
+      tokenHash: data.tokenHash,
+      token_expires_at:expiresIn
     }).returning()
     return user
   }
 
-  findByVerificationToken = async (token: string) => {
-    const [user] = await this.database.
-      select().
-      from(usersTable).
-      where(eq(usersTable.tokenHash,token))
-    return user
-  }
+  findByVerificationToken = async (tokenHash: string) => {
+    const [user] = await this.database
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.tokenHash, tokenHash))
+      .limit(1);
 
-  updateVerficationToken = async (userId: number,token:string) => {
+    return user;
+  };
+
+  updateVerficationToken = async (userId: number, token: string) => {
+    const expiresIn=this.createTokenExpiry()
     const [user] = await this.database.update(usersTable).set({
-      tokenHash:token
+      tokenHash: token,
+      token_expires_at:expiresIn
     }).where(eq(usersTable.id, userId)).returning()
     return user
 
@@ -57,12 +71,12 @@ export class authRepoClass{
   userExist = async (data: {
     email:string
   }) => {
-    const user= await this.database.
+    const [user]= await this.database.
       select().
       from(usersTable).
-      where(eq(usersTable.email,data.email))
-    if (user) return true
-    return false
+      where(eq(usersTable.email, data.email)).
+      limit(1)
+    return !!user
   }
 
   findUserById = async (userId: number) => {

@@ -3,7 +3,7 @@ import { emailQueue } from "@api/BullMq/Email/email.queue";
 import { authRepoClass } from "./auth.repositary";
 import {
   generateVerificationId,
-  hash,
+  hashVerificationToken,
   hashPassword,
 } from "./auth.utils";
 
@@ -26,14 +26,13 @@ export class authServiceClass {
     if (!data.password) throw new Error("Password is required");
 
     const userExist = await this.authRepo.userExist({ email });
-
     if (userExist) {
       throw new Error("User already exists");
     }
 
     const hashedPassword = await hashPassword(data.password);
     const emailVerifyToken = generateVerificationId();
-    const tokenHash = await hash(emailVerifyToken);
+    const tokenHash = await hashVerificationToken(emailVerifyToken);
 
     const user = await this.authRepo.create({
       name,
@@ -91,7 +90,7 @@ export class authServiceClass {
     }
 
     const newToken = generateVerificationId();
-    const newTokenHash = await hash(newToken);
+    const newTokenHash = await hashVerificationToken(newToken);
 
     await this.authRepo.updateVerficationToken(
       user.id,
@@ -122,18 +121,18 @@ export class authServiceClass {
   };
 
   verifyEmail = async (data: { token: string }) => {
+    const tokenHash = hashVerificationToken(data.token);
     const user = await this.authRepo.findByVerificationToken(
-      data.token,
+      tokenHash,
     );
 
     if (!user) {
       throw new Error("Invalid verification token");
     }
 
-    if (
-      !user.token_expires_at ||
-      Date.now() > user.token_expires_at.getTime()
-    ) {
+    const expiresAt = user.token_expires_at;
+
+    if (!expiresAt || expiresAt.getTime() <= Date.now()) {
       throw new Error("Verification link has expired.");
     }
 

@@ -1,27 +1,37 @@
 
-import { Worker, type Job } from "bullmq";
+import { UnrecoverableError, Worker, type Job } from "bullmq";
 import { queueRedisConnection } from "@api/Config/queue-redis";
 import { sendEmail } from "@api/services/emailService";
 import { envConfig } from "@api/Config/env.config";
 import type { VerificationEmailJob } from "./email.queue"
+import { sendVerifyEmail } from "./Helpers/verification-email";
 
 export const emailWorker = new Worker<VerificationEmailJob>(
   "email",
   async (job: Job<VerificationEmailJob>) => {
     const { email, token } = job.data;
 
-    const verificationLink =
-      `${envConfig.BASE_URL}/api/verify/${encodeURIComponent(token)}`;
+    if (
+      typeof email !== "string" ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+      throw new UnrecoverableError(
+        `Invalid recipient email for job ${job.id}`,
+      );
+    }
 
-    await sendEmail({
-      to: email,
-      subject: "Verify your account",
-      html: `
-        <h2>Verify your email</h2>
-        <p>Click the link below to verify your account.</p>
-        <a href="${verificationLink}">Verify email</a>
-      `,
+    const verificationLink =
+      `${envConfig.BASE_URL}/auth/verify/${encodeURIComponent(token)}`;
+
+
+    console.log("Email job:", {
+      jobId: job.id,
+      recipient: JSON.stringify(job.data.email),
     });
+    await sendVerifyEmail({
+      verificationLink,
+      email
+    })
 
     console.log(`Verification email sent for job ${job.id}`);
   },

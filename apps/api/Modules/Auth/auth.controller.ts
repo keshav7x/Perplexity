@@ -40,23 +40,54 @@ export class authControllerClass {
     },
   );
 
+
   verifyEmail = asyncHandler(
     async (req: Request, res: Response) => {
       const { token } = req.params;
 
-      //@ts-ignore  
-      const user = await this.authService.verifyEmail({ token });
+      const user = await this.authService.verifyEmail({ token:token?.toString() });
 
-      return ApiResponse.success(
-        res,
-        200,
-        "Email verified successfully.",
-        {
-          id: user.id,
-          email: user.email,
-          emailVerified: true,
-        },
-      );
+      return res.status(200).send(`
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>Email Verified</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                background: #f8fafc;
+                display: grid;
+                place-items: center;
+                min-height: 100vh;
+                margin: 0;
+              }
+
+              .card {
+                background: white;
+                padding: 40px;
+                border-radius: 16px;
+                text-align: center;
+                max-width: 400px;
+                margin: 20px;
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+              }
+
+              h1 { color: #16a34a; }
+              p { color: #475569; line-height: 1.6; }
+            </style>
+          </head>
+          <body>
+            <main class="card">
+              <h1>Email verified!</h1>
+              <p>Your email address has been verified successfully.</p>
+              <p>You can now return to the application and log in.</p>
+            </main>
+          </body>
+        </html>
+      `);
     },
   );
+
 }
