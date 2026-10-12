@@ -12,6 +12,7 @@ const envSchema = z.object({
   GROQ_API_KEY: z.string(),
   TAVILY_API_KEY: z.string(),
   crewAi: z.string(),
+  REDIS_URL:z.string()
   
   
 })

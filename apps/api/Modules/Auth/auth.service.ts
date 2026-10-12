@@ -1,31 +1,16 @@
-import { envConfig } from "@api/Config/env.config";
-import { sendEmail } from "@api/services/emailService";
+
+import { emailQueue } from "@api/BullMq/Email/email.queue";
 import { authRepoClass } from "./auth.repositary";
-import { generateVerificationId, hash, hashPassword } from "./auth.utils";
-import { PgTimestamp, timestamp } from "drizzle-orm/pg-core";
+import {
+  generateVerificationId,
+  hash,
+  hashPassword,
+} from "./auth.utils";
 
 export class authServiceClass {
   constructor(
     private readonly authRepo = new authRepoClass(),
   ) {}
-
-  private sendVerificationEmail = async (
-    email: string,
-    token: string,
-  ) => {
-    const verificationLink =
-      `${envConfig.BASE_URL}/api/verify/${encodeURIComponent(token)}`;
-
-    await sendEmail({
-      to: email,
-      subject: "Verify your account",
-      html: `
-        <h2>Verify your email</h2>
-        <p>Click the link below to verify your account.</p>
-        <a href="${verificationLink}">Verify email</a>
-      `,
-    });
-  };
 
   create = async (data: {
     name: string;
@@ -58,23 +43,30 @@ export class authServiceClass {
       tokenHash,
     });
 
-    if(!user) throw new Error("Could not create user")
+    if (!user) {
+      throw new Error("Could not create user");
+    }
+
     try {
-      await this.sendVerificationEmail(user.email, emailVerifyToken);
+      await emailQueue.add("verification", {
+        email: user.email,
+        token: emailVerifyToken,
+      });
 
       return {
         success: true,
-        status: "READY" as const,
-        message: "Registration successful. Check your inbox.",
+        status: "QUEUED" as const,
+        message:
+          "Registration successful. Your verification email is queued.",
       };
     } catch (error) {
-      console.error("Verification email delivery failed:", error);
+      console.error("Failed to enqueue verification email:", error);
 
       return {
         success: true,
-        status: "EMAIL_FAILED" as const,
+        status: "QUEUE_FAILED" as const,
         message:
-          "Your account was created, but the verification email could not be sent. Please resend the verification email.",
+          "Your account was created, but your verification email could not be queued. Please request another verification email.",
       };
     }
   };
@@ -93,11 +85,13 @@ export class authServiceClass {
     }
 
     if (user.emailVerified) {
-      throw new Error("This account is already verified. Please log in.");
+      throw new Error(
+        "This account is already verified. Please log in.",
+      );
     }
 
-    const newEmailVerifyToken = generateVerificationId();
-    const newTokenHash = await hash(newEmailVerifyToken);
+    const newToken = generateVerificationId();
+    const newTokenHash = await hash(newToken);
 
     await this.authRepo.updateVerficationToken(
       user.id,
@@ -105,48 +99,52 @@ export class authServiceClass {
     );
 
     try {
-      await this.sendVerificationEmail(
-        user.email,
-        newEmailVerifyToken,
-      );
+      await emailQueue.add("verification", {
+        email: user.email,
+        token: newToken,
+      });
 
       return {
         success: true,
-        status: "READY" as const,
-        message: "Verification email sent successfully.",
+        status: "QUEUED" as const,
+        message: "Your verification email has been queued.",
       };
     } catch (error) {
-      console.error("Verification email resend failed:", error);
+      console.error("Failed to enqueue verification email:", error);
 
       return {
         success: true,
-        status: "EMAIL_FAILED" as const,
+        status: "QUEUE_FAILED" as const,
         message:
-          "The verification email could not be sent. Please try again.",
+          "Your verification email could not be queued. Please try again.",
       };
     }
   };
 
-  verifyEmail = async (data: {
-    token:string
-  }) => {
-    const user = await this.authRepo.findByVerificationToken(data.token)
-    if (!user) throw new Error("Can't find token")
-    const isExpired = Date.now() > user.token_expires_at!.getTime();
+  verifyEmail = async (data: { token: string }) => {
+    const user = await this.authRepo.findByVerificationToken(
+      data.token,
+    );
 
-    if (isExpired) {
+    if (!user) {
+      throw new Error("Invalid verification token");
+    }
+
+    if (
+      !user.token_expires_at ||
+      Date.now() > user.token_expires_at.getTime()
+    ) {
       throw new Error("Verification link has expired.");
     }
 
-    const verifiedUser = await this.authRepo.markAsVerified(user.id)
+    const verifiedUser = await this.authRepo.markAsVerified(
+      user.id,
+    );
 
-    if (!verifiedUser) throw new Error("Could not verify")
+    if (!verifiedUser) {
+      throw new Error("Could not verify account");
+    }
 
-    return user
-
-    
-
-  }
-
-
+    return verifiedUser;
+  };
 }

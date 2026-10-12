@@ -1,1 +1,2 @@
-console.log("Hello via Bun!");
+import 'dotenv/config'
+import { emailWorker } from './BullMq/Email/email.worker'
