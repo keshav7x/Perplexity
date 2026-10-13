@@ -1,4 +1,4 @@
-import { tool } from "langchain";
+import { tool } from "@langchain/core/tools";
 import * as z from "zod";
 import { TavilyExtract } from "@langchain/tavily";
 import { envConfig } from "@api/Config/env.config";

@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "perplexity",
+      "dependencies": {
+        "@langchain/tavily": "^1.2.0",
+      },
       "devDependencies": {
         "prettier": "3.9.6",
         "turbo": "^2.11.7",
