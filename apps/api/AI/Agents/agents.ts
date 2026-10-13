@@ -10,8 +10,9 @@ import { webSearchTool } from "../Tools/web/web-search.tool";
 import { webExtractContent } from "../Tools/web/web-extract-content.tool";
 
 export const agents = (model: Provider) => {
-  const agents = createAgent({
+  const agent = createAgent({
     model: model,
     tools:[webExtractContent,webSearchTool,exaWebFetch,webCrawler,webScrapeTool],
   })
+  return agent
 }
