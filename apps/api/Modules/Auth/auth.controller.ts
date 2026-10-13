@@ -2,7 +2,14 @@
 import type { Request, Response } from "express";
 import { ApiResponse } from "@api/shared/Response";
 import { asyncHandler } from "@api/shared/asyncHandler";
+import type { AuthRequest } from "@api/shared/auth";
+import { getCookie } from "@api/shared/cookies";
 import { authServiceClass } from "./auth.service";
+import {
+  AUTH_COOKIE_NAME,
+  authCookieOptions,
+  loginSchema,
+} from "./auth.utils";
 
 export class authControllerClass {
   constructor(
@@ -41,11 +48,49 @@ export class authControllerClass {
   );
 
 
+  login = asyncHandler(async (req: Request, res: Response) => {
+    // Repeat login: reuse the JWT already stored in cookies if still valid.
+    const cookieToken = getCookie(req, AUTH_COOKIE_NAME);
+
+    if (cookieToken) {
+      try {
+        const session =
+          await this.authService.loginWithCookieToken(cookieToken);
+        return ApiResponse.success(res, 200, "Already logged in", session);
+      } catch {
+        // Invalid/expired cookie — fall through to credential login.
+      }
+    }
+
+    const body = loginSchema.parse(req.body);
+    const result = await this.authService.login(body);
+
+    res.cookie(AUTH_COOKIE_NAME, result.token, authCookieOptions());
+
+    return ApiResponse.success(res, 200, "Login successful", {
+      user: result.user,
+    });
+  });
+
+  logout = asyncHandler(async (_req: Request, res: Response) => {
+    res.clearCookie(AUTH_COOKIE_NAME, { path: "/" });
+    return ApiResponse.success(res, 200, "Logged out", { success: true });
+  });
+
+  me = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const user = await this.authService.getMe(req.user.id);
+    return ApiResponse.success(res, 200, "User fetched", user);
+  });
+
   verifyEmail = asyncHandler(
     async (req: Request, res: Response) => {
       const { token } = req.params;
 
-      const user = await this.authService.verifyEmail({ token:token?.toString() });
+      if (!token) {
+        return ApiResponse.error(res, 400, "Verification token is required");
+      }
+
+      const user = await this.authService.verifyEmail({ token });
 
       return res.status(200).send(`
         <!DOCTYPE html>

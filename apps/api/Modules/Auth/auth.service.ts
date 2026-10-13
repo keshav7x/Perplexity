@@ -5,6 +5,9 @@ import {
   generateVerificationId,
   hashVerificationToken,
   hashPassword,
+  signAuthToken,
+  verifyAuthToken,
+  verifyPassword,
 } from "./auth.utils";
 
 export class authServiceClass {
@@ -121,6 +124,9 @@ export class authServiceClass {
   };
 
   verifyEmail = async (data: { token: string }) => {
+    if (!data.token) {
+      throw new Error("Verification token is required");
+    }
     const tokenHash = hashVerificationToken(data.token);
     const user = await this.authRepo.findByVerificationToken(
       tokenHash,
@@ -145,5 +151,83 @@ export class authServiceClass {
     }
 
     return verifiedUser;
+  };
+
+  login = async (data: { email: string; password: string }) => {
+    const email = data.email.trim().toLowerCase();
+
+    if (!email) throw new Error("Email is required");
+    if (!data.password) throw new Error("Password is required");
+
+    const user = await this.authRepo.findByEmail(email);
+
+    // Generic message to avoid user enumeration.
+    if (!user) {
+      throw new Error("Invalid email or password");
+    }
+
+    const ok = await verifyPassword(user.hashedPassword, data.password);
+    if (!ok) {
+      throw new Error("Invalid email or password");
+    }
+
+    if (!user.emailVerified) {
+      throw new Error("Please verify your email before logging in.");
+    }
+
+    const token = await signAuthToken(user.id);
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        emailVerified: user.emailVerified,
+      },
+    };
+  };
+
+  /**
+   * Reused on repeat logins: if the request already carries a valid
+   * auth cookie, verify it with JWT and return the session instead of
+   * requiring credentials again.
+   */
+  loginWithCookieToken = async (cookieToken: string) => {
+    const { id } = await verifyAuthToken(cookieToken);
+    const user = await this.authRepo.findUserById(id);
+
+    if (!user) {
+      throw new Error("Invalid or expired token");
+    }
+
+    if (!user.emailVerified) {
+      throw new Error("Please verify your email before logging in.");
+    }
+
+    return {
+      alreadyLoggedIn: true as const,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        emailVerified: user.emailVerified,
+      },
+    };
+  };
+
+  getMe = async (userId: number) => {
+    const user = await this.authRepo.findUserById(userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      emailVerified: user.emailVerified,
+    };
   };
 }
