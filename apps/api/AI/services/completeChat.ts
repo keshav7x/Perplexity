@@ -27,6 +27,7 @@ export const completeChat = async (
   const response = await agent.invoke({
     messages: allMessages,
   });
+  console.log(response)
 
   const lastMessage = response.messages?.at(-1);
 

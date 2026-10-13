@@ -126,7 +126,7 @@ export class chatServiceClass {
     }));
 
     const answer = await completeChat("groq", message, formattedHistory);
-
+    console.log(answer)
     if (!answer) {
       throw new Error("AI response could not be generated");
     }
@@ -223,6 +223,7 @@ export class chatServiceClass {
         aiMessage: aiChat,
       };
     } catch (error) {
+      console.log(error)
       // The user message remains persisted.
       // In a production app, mark this AI turn as failed or enqueue a retry.
       throw new Error("Failed to generate AI response", {

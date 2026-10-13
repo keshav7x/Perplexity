@@ -1,11 +1,11 @@
 import { tool } from "@langchain/core/tools";
-import * as z from "zod";
+import { z } from "zod";
 import { TavilyExtract } from "@langchain/tavily";
 import { envConfig } from "@api/Config/env.config";
 
 const tavilyExtract = new TavilyExtract({
   format: "markdown",
-  tavilyApiKey:envConfig.TAVILY_API_KEY
+  tavilyApiKey: envConfig.TAVILY_API_KEY,
 });
 
 export const webExtractContent = tool(
@@ -19,21 +19,23 @@ export const webExtractContent = tool(
 
     if (!page?.raw_content) {
       const failure = response.failed_results?.[0];
-      throw new Error(failure?.error ?? "No readable content returned from Tavily.");
+      throw new Error(
+        failure?.error ?? "No readable content returned from Tavily.",
+      );
     }
 
-    return {
+    return JSON.stringify({
       url: page.url,
       content: page.raw_content,
-    };
+    });
   },
   {
     name: "web_extract_content",
     description:
-      "Extract clean Markdown content from a webpage URL. Optionally provide a query to prioritize relevant content.",
+      "Extract clean Markdown content from a webpage. Optionally prioritize content relevant to a query.",
     schema: z.object({
-      url: z.string().url().describe("The webpage URL to extract"),
-      query: z.string().optional().describe("What information to prioritize"),
+      url: z.string().url(),
+      query: z.string().optional(),
     }),
   },
 );

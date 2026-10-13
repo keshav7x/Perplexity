@@ -1,41 +1,19 @@
-
-import { tool } from "ai";
-import { exa } from "@api/Config/exa";
+import { tool } from "@langchain/core/tools";
 import { z } from "zod";
+import { exa } from "@api/Config/exa";
 import { webSearchPrompt } from "@api/AI/PromptsTemplate/ToolsPrompt/Web-search-prompt";
 
-const webSearchInputSchema = z.object({
-  query: z
-    .string()
-    .trim()
-    .min(1, "Search query cannot be empty")
-    .max(500, "Search query is too long"),
-
-  maxResults: z.number().int().min(1).max(10).default(5),
-});
-
-export const webSearchTool = tool({
-  description:
-    "Search the web for relevant information, current events, " +
-    "and external sources. Returns ranked results with URLs, " +
-    "titles, and relevant highlights. Use web-fetch to retrieve " +
-    "and inspect the full content of a specific page.",
-
-  inputSchema: webSearchInputSchema,
-
-
-  execute: async ({ query, maxResults }) => {
+export const webSearchTool = tool(
+  async ({ query, maxResults }) => {
     const searchQuery = webSearchPrompt({ query });
 
     const response = await exa.search(searchQuery, {
       type: "auto",
       numResults: maxResults,
-      contents: {
-        highlights: true,
-      },
+      contents: { highlights: true },
     });
 
-    return {
+    return JSON.stringify({
       results: response.results.map((result) => ({
         id: result.id,
         title: result.title ?? result.url,
@@ -43,6 +21,15 @@ export const webSearchTool = tool({
         publishedAt: result.publishedDate ?? null,
         highlights: result.highlights ?? [],
       })),
-    };
+    });
   },
-});
+  {
+    name: "web_search",
+    description:
+      "Search the web for relevant information, current events, and external sources. Returns ranked results with URLs, titles, publication dates, and highlights.",
+    schema: z.object({
+      query: z.string().trim().min(1).max(500),
+      maxResults: z.number().int().min(1).max(10).default(5),
+    }),
+  },
+);
