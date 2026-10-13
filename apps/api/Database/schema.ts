@@ -28,6 +28,9 @@ export const conversationTable = pgTable("conversations", {
   ownerId: integer()
     .notNull()
     .references(() => usersTable.id, { onDelete: "cascade" }),
+  projectId: integer().references(() => projectsTable.id, {
+    onDelete: "set null",
+  }),
   isArchived: boolean().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -42,15 +45,13 @@ export const chatTable = pgTable("chats", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const projectTable = pgTable("project", {
+export const projectsTable = pgTable("projects", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   title: varchar().notNull(),
+  description: varchar(),
   ownerId: integer()
     .notNull()
     .references(() => usersTable.id, { onDelete: "cascade" }),
-  conversationId: integer()
-    .notNull()
-    .references(() => conversationTable.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", {
     withTimezone: true,
     mode: "date",
@@ -65,17 +66,21 @@ export const projectTable = pgTable("project", {
     .notNull(),
 });
 
+// Deprecated alias — the table was renamed from `project` to `projects`
+// and no longer holds a conversationId. Use `projectsTable`.
+export const projectTable = projectsTable;
+
 export const appRelations = defineRelations(
   {
     usersTable,
     conversationTable,
-    projectTable,
+    projectsTable,
     chatTable,
   },
   (r) => ({
     usersTable: {
       conversations: r.many.conversationTable(),
-      projects: r.many.projectTable(),
+      projects: r.many.projectsTable(),
     },
 
     conversationTable: {
@@ -83,22 +88,19 @@ export const appRelations = defineRelations(
         from: r.conversationTable.ownerId,
         to: r.usersTable.id,
       }),
-      project: r.one.projectTable({
-        from: r.conversationTable.id,
-        to: r.projectTable.conversationId,
+      project: r.one.projectsTable({
+        from: r.conversationTable.projectId,
+        to: r.projectsTable.id,
       }),
       chats: r.many.chatTable(),
     },
 
-    projectTable: {
+    projectsTable: {
       owner: r.one.usersTable({
-        from: r.projectTable.ownerId,
+        from: r.projectsTable.ownerId,
         to: r.usersTable.id,
       }),
-      conversation: r.one.conversationTable({
-        from: r.projectTable.conversationId,
-        to: r.conversationTable.id,
-      }),
+      conversations: r.many.conversationTable(),
     },
 
     chatTable: {
