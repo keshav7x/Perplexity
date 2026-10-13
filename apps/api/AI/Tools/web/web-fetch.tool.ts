@@ -1,4 +1,4 @@
-import { tool } from "langchain";
+import { tool } from "@langchain/core/tools";
 import * as z from "zod";
 import { exa } from "@api/Config/exa";
 
@@ -8,7 +8,7 @@ export const exaWebFetch = tool(
       highlights: { query },
     });
 
-    return result.results.map((hit) => ({
+    return result.results.map((hit:any) => ({
       url: hit.url,
       title: hit.title,
       highlights: hit.highlights ?? [],
