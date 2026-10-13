@@ -1,6 +1,9 @@
 import { chatRepositoryClass } from "./chat.repositary";
 import { generateChatTitle } from "@api/AI/services/generateTitle";
-import { completeChat } from "@api/AI/services/completeChat";
+import {
+  completeChat,
+  type ChatHistoryItem,
+} from "@api/AI/services/completeChat";
 import { db } from "@api/Database";
 import {
   chatTable,
@@ -109,11 +112,15 @@ export class chatServiceClass {
     return title.toString().slice(0, 120);
   }
 
+  private toSender(value: string): Sender {
+    return value === "user" ? "user" : "ai";
+  }
+
   private async generateAnswer(
     message: string,
     history: { sender: Sender; message: string }[],
   ) {
-    const formattedHistory = history.map((item) => ({
+    const formattedHistory: ChatHistoryItem[] = history.map((item) => ({
       role: item.sender === "user" ? "user" : "assistant",
       content: item.message,
     }));
@@ -184,7 +191,16 @@ export class chatServiceClass {
     });
 
     // Repo returns newest-first; the model needs chronological order.
-    const history = [...historyPage.items].reverse();
+    // DB rows type `sender` as `string` (varchar), so narrow it to the
+    // `Sender` union at the boundary.
+    const history: { sender: Sender; message: string }[] = [
+      ...historyPage.items,
+    ]
+      .reverse()
+      .map((item) => ({
+        sender: this.toSender(item.sender),
+        message: item.message,
+      }));
 
     const userChat = await this.chatRepo.createMessage({
       conversationId: conversation.id,

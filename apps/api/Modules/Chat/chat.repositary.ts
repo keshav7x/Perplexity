@@ -24,7 +24,7 @@ function clampLimit(limit?: number, fallback = DEFAULT_MESSAGE_LIMIT) {
 }
 
 export class chatRepositoryClass {
-  constructor(private readonly DB: typeof db = db) {}
+  constructor(private readonly DB: typeof db = db) { }
 
   // ---------- Conversations ----------
 
@@ -273,7 +273,7 @@ export class chatRepositoryClass {
     conversationId?: number;
     conversationTitle?: string;
   }) => {
-    return await this.DB.transaction(async (tx) => {
+    return await this.DB.transaction(async (tx: any) => {
       let conversationId = data.conversationId;
 
       if (!conversationId) {

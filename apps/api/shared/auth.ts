@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { jwtVerify } from "jose";
 import { ApiResponse } from "./Response";
+import { getCookie } from "./cookies";
 
 export interface AuthUser {
   id: number;
@@ -10,13 +11,33 @@ export interface AuthRequest extends Request {
   user: AuthUser;
 }
 
+export const AUTH_COOKIE_NAMES = ["token", "auth_token", "jwt"] as const;
+
+const getTokenFromRequest = (req: Request): string | undefined => {
+  // 1. Cookies (parsed jar, else raw Cookie header — no cookie-parser required).
+  for (const name of AUTH_COOKIE_NAMES) {
+    const value = getCookie(req, name);
+    if (value) return value;
+  }
+
+  // 2. Bearer fallback for API clients.
+  const header = req.header("authorization");
+  if (header?.startsWith("Bearer ")) {
+    return header.slice(7);
+  }
+
+  return undefined;
+};
+
 /**
- * Verifies a Bearer JWT (issued with `sub` = numeric user id) and attaches
- * `req.user`. Login/signup must sign tokens with `JWT_SECRET`.
+ * Verifies a JWT (issued with `sub` = numeric user id) and attaches
+ * `req.user`. The token is read from httpOnly cookies first
+ * (`token` set by POST /api/v1/auth/login), then falls back to a
+ * `Authorization: Bearer <token>` header.
  *
  * Development-only escape hatch: when `NODE_ENV !== "production"`, an
  * `x-user-id: <id>` header is accepted so the chat/conversation/project
- * APIs can be exercised before login exists. Remove once login lands.
+ * APIs can be exercised without login.
  */
 export const requireAuth = async (
   req: Request,
@@ -36,14 +57,17 @@ export const requireAuth = async (
       }
     }
 
-    const header = req.header("authorization");
-    const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined;
+    const token = getTokenFromRequest(req);
 
     if (!token) {
       return ApiResponse.error(res, 401, "Unauthorized");
     }
 
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const secretValue = process.env.JWT_SECRET;
+    if (!secretValue) {
+      return ApiResponse.error(res, 500, "JWT secret is not configured");
+    }
+    const secret = new TextEncoder().encode(secretValue);
     const { payload } = await jwtVerify(token, secret);
     const id = Number(
       payload.sub ?? payload.userId ?? payload["id"],

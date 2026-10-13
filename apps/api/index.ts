@@ -1,4 +1,3 @@
-
 import "dotenv/config";
 import express, {
   type NextFunction,
@@ -12,11 +11,13 @@ import chatRouter from "./Modules/Chat/chat.routes";
 import conversationRouter from "./Modules/conversation/conversation.routes";
 import projectRouter from "./Modules/Project/project.routes";
 import { ApiResponse } from "./shared/Response";
+import { cookieParser } from "./shared/cookies";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
+app.use(cookieParser);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({
@@ -32,8 +33,6 @@ app.use(`${BASE_URL}/chat`, chatRouter);
 app.use(`${BASE_URL}/conversations`, conversationRouter);
 app.use(`${BASE_URL}/projects`, projectRouter);
 
-// Global error handler (must be registered after all routes).
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof ZodError) {
     return ApiResponse.error(res, 400, "Validation failed", err.issues);
