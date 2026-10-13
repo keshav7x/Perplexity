@@ -66,9 +66,7 @@ export const projectsTable = pgTable("projects", {
     .notNull(),
 });
 
-// Deprecated alias — the table was renamed from `project` to `projects`
-// and no longer holds a conversationId. Use `projectsTable`.
-export const projectTable = projectsTable;
+
 
 export const appRelations = defineRelations(
   {
