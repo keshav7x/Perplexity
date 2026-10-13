@@ -9,7 +9,7 @@ import { exaWebFetch } from "../Tools/web/web-fetch.tool";
 import { webSearchTool } from "../Tools/web/web-search.tool";
 import { webExtractContent } from "../Tools/web/web-extract-content.tool";
 
-export const agents = (model: Provider) => {
+export const agents = (model: any) => {
   const agent = createAgent({
     model: model,
     tools:[webExtractContent,webSearchTool,exaWebFetch,webCrawler,webScrapeTool],

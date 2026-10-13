@@ -4,7 +4,7 @@ import type { BaseChatModel } from "@langchain/core/language_models/chat_models"
 
 export type Provider = "groq" | "openrouter" | "nvidia";
 
-export const AIRegistry= (name: Provider):BaseChatModel  => {
+export const AIRegistry= (name: Provider)  => {
   switch (name) {
     case 'groq':
       return groqModel
