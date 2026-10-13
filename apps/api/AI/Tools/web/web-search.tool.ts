@@ -2,6 +2,7 @@
 import { tool } from "ai";
 import { exa } from "@api/Config/exa";
 import { z } from "zod";
+import { webSearchPrompt } from "@api/AI/PromptsTemplate/ToolsPrompt/Web-search-prompt";
 
 const webSearchInputSchema = z.object({
   query: z
@@ -22,8 +23,11 @@ export const webSearchTool = tool({
 
   inputSchema: webSearchInputSchema,
 
+
   execute: async ({ query, maxResults }) => {
-    const response = await exa.search(query, {
+    const searchQuery = webSearchPrompt({ query });
+
+    const response = await exa.search(searchQuery, {
       type: "auto",
       numResults: maxResults,
       contents: {
@@ -32,7 +36,7 @@ export const webSearchTool = tool({
     });
 
     return {
-      results: response.results.map((result:any) => ({
+      results: response.results.map((result) => ({
         id: result.id,
         title: result.title ?? result.url,
         url: result.url,
