@@ -1,86 +1,175 @@
-
-import type { Request, Response } from "express";
+import type { Response } from "express";
+import { ApiResponse } from "@api/shared/Response";
+import { asyncHandler } from "@api/shared/asyncHandler";
+import type { AuthRequest } from "@api/shared/auth";
 import { ConversationService } from "./conversation.service";
+import {
+  conversationIdParamSchema,
+  conversationListQuerySchema,
+  createConversationSchema,
+  moveConversationSchema,
+  renameConversationSchema,
+} from "./conversation.validation";
 
 export class ConversationController {
   constructor(
-    private readonly conversationService: ConversationService,
+    private readonly conversationService: ConversationService = new ConversationService(),
   ) {}
 
-  createConversation = async (req: Request, res: Response) => {
-    const ownerId = (req as any).user.id
+  createConversation = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+      const body = createConversationSchema.parse(req.body);
 
-    const conversation =
-      await this.conversationService.createConversation({
-        ownerId,
-        title: req.body.title,
+      const conversation =
+        await this.conversationService.createConversation({
+          ownerId: req.user.id,
+          title: body.title,
+          projectId: body.projectId,
+        });
+
+      return ApiResponse.success(
+        res,
+        201,
+        "Conversation created successfully",
+        conversation,
+      );
+    },
+  );
+
+  listConversations = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+      const query = conversationListQuerySchema.parse(req.query);
+
+      const result = await this.conversationService.getConversations({
+        ownerId: req.user.id,
+        limit: query.limit,
+        cursor: query.cursor,
+        includeArchived: query.includeArchived,
+        projectId: query.projectId,
       });
 
-    return res.status(201).json({
-      success: true,
-      message: "Conversation created successfully",
-      data: conversation,
+      return ApiResponse.success(
+        res,
+        200,
+        "Conversations fetched successfully",
+        result,
+      );
+    },
+  );
+
+  getConversation = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const params = conversationIdParamSchema.parse(req.params);
+
+    const conversation = await this.conversationService.getConversation({
+      conversationId: params.conversationId,
+      ownerId: req.user.id,
     });
-  };
 
-  renameConversation = async (req: Request, res: Response) => {
-    const conversationId = Number(req.params.conversationId);
+    return ApiResponse.success(
+      res,
+      200,
+      "Conversation fetched successfully",
+      conversation,
+    );
+  });
 
-    const conversation =
-      await this.conversationService.renameConversation({
-        conversationId,
-        title: req.body.title,
-      });
+  renameConversation = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+      const params = conversationIdParamSchema.parse(req.params);
+      const body = renameConversationSchema.parse(req.body);
 
-    return res.status(200).json({
-      success: true,
-      message: "Conversation renamed successfully",
-      data: conversation,
-    });
-  };
+      const conversation =
+        await this.conversationService.renameConversation({
+          conversationId: params.conversationId,
+          ownerId: req.user.id,
+          title: body.title,
+        });
 
-  archiveConversation = async (req: Request, res: Response) => {
-    const conversationId = Number(req.params.conversationId);
+      return ApiResponse.success(
+        res,
+        200,
+        "Conversation renamed successfully",
+        conversation,
+      );
+    },
+  );
 
-    const conversation =
-      await this.conversationService.archiveConversation(
-        conversationId,
+  archiveConversation = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+      const params = conversationIdParamSchema.parse(req.params);
+
+      const conversation =
+        await this.conversationService.archiveConversation({
+          conversationId: params.conversationId,
+          ownerId: req.user.id,
+        });
+
+      return ApiResponse.success(
+        res,
+        200,
+        "Conversation archived successfully",
+        conversation,
+      );
+    },
+  );
+
+  unarchiveConversation = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+      const params = conversationIdParamSchema.parse(req.params);
+
+      const conversation =
+        await this.conversationService.unarchiveConversation({
+          conversationId: params.conversationId,
+          ownerId: req.user.id,
+        });
+
+      return ApiResponse.success(
+        res,
+        200,
+        "Conversation unarchived successfully",
+        conversation,
+      );
+    },
+  );
+
+  moveConversation = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+      const params = conversationIdParamSchema.parse(req.params);
+      const body = moveConversationSchema.parse(req.body);
+
+      const conversation = await this.conversationService.moveConversation(
+        {
+          conversationId: params.conversationId,
+          ownerId: req.user.id,
+          projectId: body.projectId,
+        },
       );
 
-    return res.status(200).json({
-      success: true,
-      message: "Conversation archived successfully",
-      data: conversation,
-    });
-  };
-
-  unarchiveConversation = async (req: Request, res: Response) => {
-    const conversationId = Number(req.params.conversationId);
-
-    const conversation =
-      await this.conversationService.unarchiveConversation(
-        conversationId,
+      return ApiResponse.success(
+        res,
+        200,
+        "Conversation moved successfully",
+        conversation,
       );
+    },
+  );
 
-    return res.status(200).json({
-      success: true,
-      message: "Conversation unarchived successfully",
-      data: conversation,
-    });
-  };
+  deleteConversation = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+      const params = conversationIdParamSchema.parse(req.params);
 
-  deleteConversation = async (req: Request, res: Response) => {
-    const conversationId = Number(req.params.conversationId);
+      const deletedConversation =
+        await this.conversationService.deleteConversation({
+          conversationId: params.conversationId,
+          ownerId: req.user.id,
+        });
 
-    const deletedConversation =
-      await this.conversationService.deleteConversation(
-        conversationId,
+      return ApiResponse.success(
+        res,
+        200,
+        "Conversation deleted successfully",
+        deletedConversation,
       );
-
-    return res.status(200).json({
-      success: true,
-      message: "Conversation deleted successfully",
-      data: deletedConversation,
-    });
-  };
+    },
+  );
 }
