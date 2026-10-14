@@ -16,8 +16,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-ink-950 text-sm text-zinc-400">
-        Checking session…
+      <div className="flex h-screen items-center justify-center bg-canvas">
+        <div className="flex items-center gap-2 text-sm text-secondary" role="status">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+          Checking session…
+        </div>
       </div>
     );
   }

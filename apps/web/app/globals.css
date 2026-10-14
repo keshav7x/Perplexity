@@ -2,9 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens. Light is the default palette; `.dark` on <html>
+ * swaps the equivalent dark palette. Every color has a fixed role:
+ * canvas = page, surface = panels/inputs, raised = wells/hovers,
+ * line = borders, primary/secondary/tertiary = text hierarchy,
+ * accent (blue) = primary actions/active states,
+ * teal = research status only.
+ */
 :root {
-  --background: #0a0a0b;
-  --foreground: #ededed;
+  color-scheme: light;
+  --c-canvas: 248 250 252; /* #F8FAFC */
+  --c-surface: 255 255 255; /* #FFFFFF */
+  --c-raised: 241 245 249; /* slate-100 */
+  --c-line: 226 232 240; /* #E2E8F0 */
+  --c-primary: 17 24 39; /* #111827 */
+  --c-secondary: 100 116 139; /* #64748B */
+  --c-tertiary: 148 163 184; /* slate-400 */
+  --c-accent: 37 99 235; /* #2563EB */
+  --c-accent-deep: 29 78 216; /* blue-700, hover */
+  --c-accent-wash: 239 246 255; /* blue-50, soft highlights */
+  --c-teal: 15 118 110; /* #0F766E */
+}
+
+.dark {
+  color-scheme: dark;
+  --c-canvas: 11 14 19; /* near-black, neutral */
+  --c-surface: 17 22 29;
+  --c-raised: 26 33 43;
+  --c-line: 35 43 56;
+  --c-primary: 230 234 240;
+  --c-secondary: 139 148 163;
+  --c-tertiary: 92 102 117;
+  --c-accent: 59 130 246; /* blue-500 reads better on dark */
+  --c-accent-deep: 37 99 235;
+  --c-accent-wash: 23 37 62;
+  --c-teal: 45 212 191; /* teal-400 for status on dark */
 }
 
 html,
@@ -14,40 +47,68 @@ body {
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background-color: rgb(var(--c-canvas));
+  color: rgb(var(--c-primary));
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 * {
   box-sizing: border-box;
 }
 
-/* thin scrollbars for sidebar / message pane */
+::selection {
+  background: rgb(var(--c-accent) / 0.18);
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgb(var(--c-accent) / 0.7);
+  outline-offset: 2px;
+}
+
+/* quiet thin scrollbars for sidebar / message pane */
+.nice-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-line)) transparent;
+}
 .nice-scroll::-webkit-scrollbar {
   width: 6px;
 }
 .nice-scroll::-webkit-scrollbar-thumb {
-  background: #2a2a31;
+  background: rgb(var(--c-line));
   border-radius: 999px;
 }
 .nice-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/* prose-ish defaults for AI messages without typography plugin */
-.ai-body p {
-  margin: 0.5rem 0;
+/* Indeterminate progress segment (honest loader — makes no staged claims). */
+@keyframes progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
 }
-.ai-body pre {
-  background: #131316;
-  border: 1px solid #2a2a31;
-  border-radius: 0.5rem;
-  padding: 0.75rem;
-  overflow-x: auto;
-  font-size: 0.8rem;
+.progress-slide {
+  animation: progress-slide 1.2s ease-in-out infinite;
 }
-.ai-body code {
-  font-family: var(--font-geist-mono), monospace;
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
 }

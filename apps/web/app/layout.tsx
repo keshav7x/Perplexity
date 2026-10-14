@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { AppProviders } from "@/components/providers";
+import { ThemeScript } from "@/components/ThemeProvider";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -13,8 +14,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Perplexity Clone",
-  description: "AI search + chat powered by the local API",
+  title: "Perplexity",
+  description: "Ask anything. Get a direct answer you can follow up on.",
 };
 
 export default function RootLayout({
@@ -23,8 +24,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" suppressHydrationWarning>
+      <ThemeScript />
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} bg-canvas font-sans text-primary`}
+      >
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

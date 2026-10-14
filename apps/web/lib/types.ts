@@ -39,6 +39,8 @@ export interface ChatMessage {
   sender: ChatSender;
   message: string;
   createdAt: string;
+  /** Client-only: true while the message exists only as an optimistic update. */
+  pending?: boolean;
 }
 
 export interface SendMessageResult {

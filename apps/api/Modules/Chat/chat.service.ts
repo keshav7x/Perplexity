@@ -125,7 +125,7 @@ export class chatServiceClass {
       content: item.message,
     }));
 
-    const answer = await completeChat("groq", message, formattedHistory);
+    const answer = await completeChat("gemini", message, formattedHistory);
     console.log(answer)
     if (!answer) {
       throw new Error("AI response could not be generated");

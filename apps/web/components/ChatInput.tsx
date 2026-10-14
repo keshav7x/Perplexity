@@ -1,66 +1,115 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ArrowUp, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { ArrowUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/store/hooks";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   pending: boolean;
   placeholder?: string;
-  initialValue?: string;
+  autoFocus?: boolean;
 }
+
+const MAX_HEIGHT = 200;
 
 export function ChatInput({
   onSend,
   pending,
   placeholder = "Ask anything…",
+  autoFocus = false,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
+  const [focused, setFocused] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const focusKey = useAppSelector((s) => s.ui.composerFocusKey);
+  const mountedRef = useRef(false);
+
+  // Auto-grow up to MAX_HEIGHT, then scroll internally.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, MAX_HEIGHT)}px`;
+  }, [value ]);
+
+  useEffect(() => {
+    if (autoFocus) ref.current?.focus();
+  }, [autoFocus]);
+
+  // "New search" action focuses the box on every press.
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return;
+    }
+    ref.current?.focus();
+  }, [focusKey]);
+
+  const canSend = value.trim().length > 0 && !pending;
 
   const submit = () => {
     const trimmed = value.trim();
     if (!trimmed || pending) return;
     onSend(trimmed);
     setValue("");
+    requestAnimationFrame(() => {
+      if (ref.current) ref.current.style.height = "auto";
+      ref.current?.focus();
+    });
   };
 
   return (
-    <motion.div
-      initial={{ y: 12, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      className="rounded-2xl border border-ink-700 bg-ink-900 p-2 shadow-xl"
+    <div
+      className={cn(
+        "rounded-xl border bg-surface transition-colors",
+        focused && !pending ? "border-accent" : "border-line",
+        pending && "opacity-80",
+      )}
     >
+      <label htmlFor="search-input" className="sr-only">
+        Ask a question
+      </label>
       <textarea
+        ref={ref}
+        id="search-input"
         value={value}
         onChange={(e) => setValue(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             submit();
           }
         }}
-        rows={3}
-        placeholder={placeholder}
-        className="w-full resize-none bg-transparent px-3 pt-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500"
+        rows={1}
+        placeholder={pending ? "Researching…" : placeholder}
+        disabled={pending}
+        className="nice-scroll max-h-[200px] w-full resize-none bg-transparent px-4 pt-3.5 text-[15px] leading-relaxed text-primary outline-none placeholder:text-tertiary disabled:opacity-60"
       />
-      <div className="flex items-center justify-between px-2 pb-1">
-        <p className="text-[11px] text-zinc-500">Enter to send · Shift+Enter newline</p>
+      <div className="flex items-center justify-between px-2.5 pb-2.5 pt-1">
+        <p className="pl-1.5 text-xs text-tertiary">
+          <kbd className="rounded border border-line bg-canvas px-1 font-sans text-[11px]">
+            ↵
+          </kbd>{" "}
+          to send
+        </p>
         <button
           onClick={submit}
-          disabled={pending || !value.trim()}
+          disabled={!canSend}
+          aria-label="Send question"
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-full",
-            pending || !value.trim()
-              ? "bg-ink-700 text-zinc-500"
-              : "bg-accent-500 text-black hover:bg-accent-400",
+            "inline-flex items-center justify-center rounded-lg p-2 transition-colors",
+            canSend
+              ? "bg-accent text-white hover:bg-accent-deep"
+              : "cursor-not-allowed bg-raised text-tertiary",
           )}
-          aria-label="Send message"
         >
-          {pending ? <Loader2 size={16} className="animate-spin" /> : <ArrowUp size={16} />}
+          <ArrowUp size={16} strokeWidth={2.25} />
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
