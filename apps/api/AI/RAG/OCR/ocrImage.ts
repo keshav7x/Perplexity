@@ -2,19 +2,6 @@ import { createWorker } from "tesseract.js";
 
 export type OcrImageInput = string | Buffer | Uint8Array;
 
-/**
- * Recognize text in a single image with Tesseract.
- *
- * Accepts a file path, a `Buffer`, or a `Uint8Array` (e.g. an embedded
- * image from `PDFParse#getImage` — wrap with `Buffer.from(bytes)` first
- * if needed; Buffers pass through as-is).
- *
- * @example
- * ```ts
- * const text = await ocrImage("page.png");
- * const text2 = await ocrImage(imageBuffer, "eng+fra");
- * ```
- */
 export async function ocrImage(
   image: OcrImageInput,
   language = "eng",
