@@ -12,10 +12,13 @@ import conversationRouter from "./Modules/conversation/conversation.routes";
 import projectRouter from "./Modules/Project/project.routes";
 import { ApiResponse } from "./shared/Response";
 import { cookieParser } from "./shared/cookies";
+import { corsMiddleware } from "./shared/cors";
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || 4000;
 
+// CORS first so preflight (OPTIONS) is answered before anything else.
+app.use(corsMiddleware);
 app.use(express.json());
 app.use(cookieParser);
 
