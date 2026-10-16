@@ -12,6 +12,7 @@ import conversationRouter from "./Modules/conversation/conversation.routes";
 import projectRouter from "./Modules/Project/project.routes";
 import { ApiResponse } from "./shared/Response";
 import { cookieParser } from "./shared/cookies";
+import { directIngestionPipeline } from "./AI/RAG/Ingestion/ingestion";
 import { corsMiddleware } from "./shared/cors";
 
 const app = express();
@@ -54,9 +55,16 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   return ApiResponse.error(res, 500, "Internal server error");
 });
 
+async function run() {
+  const ingestion = new directIngestionPipeline("./go.pdf")
+  await ingestion.run()
+}
+
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  run()
   console.log("📨 Email worker initialized");
+
 });
 
 async function shutdown(signal: string) {

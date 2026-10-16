@@ -1,63 +1,80 @@
-import { chunkers as availableChunkers } from "../Chunker";
-import { allLoders as availableLoaders } from "../Loader";
-import { normalizeDocument } from "../Helpers/normalizeDocument";
-import { detectFileType } from "../Helpers/detectFilePath";
-import { Document } from "@langchain/core/documents";
-import {
-  adaptiveChunkDocuments,
-  type AdaptiveChunkOptions,
-} from "../Chunker/adaptive.chunk";
+import { chunkDocMarrowBlocks } from "../Chunker/layoutAwareChunk";
+import { parseAndEnrich } from "../Helpers/enrichDocument";
+import { validateChunks as chunkValidator} from "../Helpers/validateChunks";
+import * as fs from 'fs';
+import { embedChunks } from "../Helpers/generateEmbedding";
 
-export class ingestationPipeline {
+export class directIngestionPipeline{
+  private readonly parsedDocument = parseAndEnrich;
+  private readonly chunkDocument = chunkDocMarrowBlocks;
+  private readonly validateChunk = chunkValidator;
   constructor(
-    private readonly chunkers = availableChunkers,
-    private readonly loaders = availableLoaders,
-    private readonly chunkOptions: AdaptiveChunkOptions = {},
-  ) {}
+    private filePath:string,
+  ) { }
 
-  private returnfileType = (path: string) => {
-    const type = detectFileType(path);
-    return type;
-  };
+  //get filePath
+  private getFilePath = (filePath: string) => {
+    this.filePath = filePath
+  }
 
-  private chooseLoader = (filepath: string) => {
-    const type = this.returnfileType(filepath);
-    return type === "pdf" ? this.loaders.pdf : this.loaders.text;
-  };
+  //get Buffer of the file
+  private getRawBuffer = () => {
+    const rawBuffer = fs.readFileSync(this.filePath);
+    return new Uint8Array(rawBuffer);
+  }
 
-  private normalizeDocument = (
-    documents: Document<Record<string, unknown>>[],
-  ) => {
-    const nonEmpty = documents.filter(
-      (doc) => doc.pageContent.trim().length > 0,
-    );
-    if (nonEmpty.length === 0) {
-      throw new Error("No extractable content found in file");
+  //parse the doc
+  private parsedDoc = async() => {
+    const rawBuffer = this.getRawBuffer()
+    const parsedDocument = await this.parsedDocument(rawBuffer)
+    return parsedDocument
+  }
+
+  //chunk the doc
+  private chunkDoc = async() => {
+    const parsedDoc =await this.parsedDoc()
+    const semanticChunks = this.chunkDocument(parsedDoc)
+    return semanticChunks
+  }
+
+  //validate chunk
+  private validateChunks = (chunk:any) => {
+    const result = this.validateChunk(chunk)
+    if (!result.valid) {
+      throw new Error(
+        `Invalid chunks: ${result.errors.join("; ")}`,
+      );
     }
-    const normalizedDocument = normalizeDocument(nonEmpty);
-    return normalizedDocument;
+
+    console.log("Chunk validation passed.");
+    if (result.warnings.length > 0) {
+      console.warn(result.warnings);
+    }
+
+    return chunk;
+  }
+
+  //generate embeddings
+  private generateEmbeddings = async (chunks: any) => {
+    const result = await embedChunks(chunks);
+    console.log(`Generated ${result.length} embeddings.`);
+    return result;
   };
 
-  private getDocument = async (filepath: string) => {
-    const loader = this.chooseLoader(filepath);
-    const document = await loader(filepath);
-    const normalized = this.normalizeDocument(document);
-    return normalized;
+  //save the embeddings into pinecone
+  
+  
+  //Index for retrieval
+
+
+  //Mark ingestion complete
+
+
+
+  run = async () => {
+    this.getFilePath(this.filePath);
+    const chunks = await this.chunkDoc();
+    this.validateChunks(chunks);
+    return await this.generateEmbeddings(chunks);
   };
-
-  chunkDocument = async (
-    filepath: string,
-    options: AdaptiveChunkOptions = {},
-  ) => {
-    const documents = await this.getDocument(filepath);
-    const chunks = await adaptiveChunkDocuments(documents, {
-      ...this.chunkOptions,
-      ...options,
-    });
-    return chunks;
-  };
-
-  enrichChunks = async () => {};
-
-  embedDocuments = async () => {};
 }
