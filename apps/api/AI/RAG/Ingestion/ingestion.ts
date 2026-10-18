@@ -62,6 +62,7 @@ export class directIngestionPipeline{
   };
 
   //save the embeddings into pinecone
+
   
   
   //Index for retrieval
@@ -75,6 +76,7 @@ export class directIngestionPipeline{
     this.getFilePath(this.filePath);
     const chunks = await this.chunkDoc();
     this.validateChunks(chunks);
-    return await this.generateEmbeddings(chunks);
+    console.log(chunks)
+    // return await this.generateEmbeddings(chunks);
   };
 }
