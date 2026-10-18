@@ -3,11 +3,12 @@ import { parseAndEnrich } from "../Helpers/enrichDocument";
 import { validateChunks as chunkValidator} from "../Helpers/validateChunks";
 import * as fs from 'fs';
 import { embedChunks } from "../Helpers/generateEmbedding";
-
+import { runStoragePipeline } from "../Helpers/runStoragePipeline";
 export class directIngestionPipeline{
   private readonly parsedDocument = parseAndEnrich;
   private readonly chunkDocument = chunkDocMarrowBlocks;
   private readonly validateChunk = chunkValidator;
+  private runStorage = runStoragePipeline;
   constructor(
     private filePath:string,
   ) { }
@@ -27,7 +28,9 @@ export class directIngestionPipeline{
   private parsedDoc = async() => {
     const rawBuffer = this.getRawBuffer()
     const parsedDocument = await this.parsedDocument(rawBuffer)
+    console.log(rawBuffer)
     return parsedDocument
+    // return parsedDocument
   }
 
   //chunk the doc
@@ -54,29 +57,24 @@ export class directIngestionPipeline{
     return chunk;
   }
 
-  //generate embeddings
-  private generateEmbeddings = async (chunks: any) => {
-    const result = await embedChunks(chunks);
-    console.log(`Generated ${result.length} embeddings.`);
-    return result;
-  };
+  //run Vectore storage pipeline
 
-  //save the embeddings into pinecone
-
-  
-  
-  //Index for retrieval
-
-
-  //Mark ingestion complete
+  private runEmbeddingStorage = async () => {
+    const chunks = await this.chunkDoc();
+    const validatedchunks=await this.validateChunks(chunks)
+    const result = await this.runStorage(validatedchunks, this.filePath)
+    console.log(result)
+    return result
+  }
 
 
 
   run = async () => {
     this.getFilePath(this.filePath);
-    const chunks = await this.chunkDoc();
-    this.validateChunks(chunks);
-    console.log(chunks)
-    // return await this.generateEmbeddings(chunks);
+
+    // this.validateChunks(chunks);
+    // console.log(chunks)
+    // this.parsedDoc()
+    await this.runEmbeddingStorage()
   };
 }
